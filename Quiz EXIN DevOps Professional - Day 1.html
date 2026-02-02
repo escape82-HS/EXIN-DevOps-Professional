@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz: EXIN DevOps Professional - Day 1</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .option-label { cursor: pointer; transition: all 0.2s; }
+        .option-label:hover { background-color: #f1f5f9; }
+        .option-input:checked + .option-content { border-color: #3b82f6; background-color: #eff6ff; }
+        .correct { border-color: #22c55e !important; background-color: #dcfce7 !important; }
+        .incorrect { border-color: #ef4444 !important; background-color: #fee2e2 !important; }
+        .explanation { display: none; }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen py-10 px-4">
+
+    <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+        <!-- Header -->
+        <div class="bg-slate-900 text-white p-8 border-b-4 border-blue-500">
+            <h1 class="text-2xl font-bold mb-2">Quiz di Verifica - Day 1</h1>
+            <p class="text-slate-400">EXIN DevOps Professional: Fondamenti, Cultura e Strumenti</p>
+            <div class="mt-4 flex items-center text-sm">
+                <span class="bg-blue-600 px-3 py-1 rounded-full mr-3">10 Domande</span>
+                <span><i class="fas fa-clock mr-1"></i> Tempo stimato: 5 min</span>
+            </div>
+        </div>
+
+        <!-- Quiz Container -->
+        <div id="quiz-container" class="p-8 space-y-8">
+            <!-- Questions will be injected here by JS -->
+        </div>
+
+        <!-- Footer / Results -->
+        <div class="p-8 bg-slate-50 border-t border-slate-200 flex flex-col items-center">
+            <button id="submit-btn" onclick="checkAnswers()" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-700 transition shadow-md w-full md:w-auto">
+                Verifica Risposte
+            </button>
+            
+            <div id="result-area" class="hidden text-center mt-6 w-full">
+                <div class="text-4xl font-bold mb-2" id="score-display">0/10</div>
+                <p id="feedback-text" class="text-lg mb-4"></p>
+                <button onclick="location.reload()" class="text-blue-600 underline hover:text-blue-800 text-sm">Ricomincia Quiz</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                id: 1,
+                question: "Chi ha coniato il termine 'DevOps' nel 2009?",
+                options: [
+                    "Gene Kim",
+                    "Patrick Debois",
+                    "Jez Humble",
+                    "Linus Torvalds"
+                ],
+                correct: 1,
+                explanation: "Patrick Debois ha coniato il termine nel 2009 alla conferenza Velocity e ha organizzato il primo DevOpsDays nel 2010 a Ghent."
+            },
+            {
+                id: 2,
+                question: "Qual è il classico 'Conflitto di Obiettivi' (Wall of Confusion) tra Dev e Ops?",
+                options: [
+                    "Dev vuole stabilità, Ops vuole velocità",
+                    "Dev vuole usare Linux, Ops vuole usare Windows",
+                    "Dev vuole Velocity (cambiamento), Ops vuole Stability (affidabilità)",
+                    "Dev vuole spendere budget, Ops vuole risparmiare"
+                ],
+                correct: 2,
+                explanation: "Il problema tradizionale è che i Dev sono misurati sulle feature rilasciate (cambiamento), mentre gli Ops sull'uptime (stabilità), creando obiettivi opposti."
+            },
+            {
+                id: 3,
+                question: "Nel framework CALMS, cosa rappresenta la 'S'?",
+                options: [
+                    "Security",
+                    "Speed",
+                    "Sharing",
+                    "Scalability"
+                ],
+                correct: 2,
+                explanation: "CALMS sta per Culture, Automation, Lean, Measurement, Sharing. La condivisione della conoscenza è fondamentale per rompere i silos."
+            },
+            {
+                id: 4,
+                question: "Qual è la 'Prima Via' (The First Way) del DevOps?",
+                options: [
+                    "Systems Thinking (Flusso)",
+                    "Amplify Feedback Loops",
+                    "Culture of Learning",
+                    "Automate Everything"
+                ],
+                correct: 0,
+                explanation: "La Prima Via enfatizza il pensiero sistemico e il flusso del valore dall'idea al cliente finale (Left to Right)."
+            },
+            {
+                id: 5,
+                question: "Qual è la differenza principale tra Continuous Delivery e Continuous Deployment?",
+                options: [
+                    "Il Continuous Delivery non usa test automatici",
+                    "Il Continuous Deployment richiede un'approvazione manuale per andare in produzione",
+                    "Il Continuous Delivery richiede un'approvazione manuale per il rilascio in produzione",
+                    "Non c'è differenza, sono sinonimi"
+                ],
+                correct: 2,
+                explanation: "Nel Continuous Delivery il codice è *pronto* per il rilascio ma richiede un click umano. Nel Continuous Deployment il rilascio in produzione è completamente automatico."
+            },
+            {
+                id: 6,
+                question: "Quale metrica DORA misura la stabilità/qualità del codice rilasciato?",
+                options: [
+                    "Deployment Frequency",
+                    "Lead Time for Changes",
+                    "Change Failure Rate",
+                    "Mean Time to Recovery (MTTR)"
+                ],
+                correct: 2,
+                explanation: "Il Change Failure Rate (CFR) indica la percentuale di deployment che causano un fallimento in produzione."
+            },
+            {
+                id: 7,
+                question: "Secondo la 'Piramide dei Test', quali test dovrebbero essere più numerosi e veloci?",
+                options: [
+                    "End-to-End (E2E) Tests",
+                    "Unit Tests",
+                    "Integration Tests",
+                    "Manual Tests"
+                ],
+                correct: 1,
+                explanation: "Gli Unit Tests sono alla base della piramide: devono essere numerosi, veloci da eseguire e isolati."
+            },
+            {
+                id: 8,
+                question: "Qual è un vantaggio chiave dei Container (Docker) rispetto alle Virtual Machines (VM)?",
+                options: [
+                    "Hanno un sistema operativo completo incluso",
+                    "Sono più pesanti ma più sicuri",
+                    "Condividono il kernel dell'host e sono molto più leggeri",
+                    "Richiedono un Hypervisor di tipo 1"
+                ],
+                correct: 2,
+                explanation: "I container non duplicano il sistema operativo (OS) ma condividono il kernel, rendendoli leggeri (MB vs GB) e veloci all'avvio."
+            },
+            {
+                id: 9,
+                question: "Terraform è un esempio di strumento IaC di tipo:",
+                options: [
+                    "Imperativo (Procedurale)",
+                    "Dichiarativo",
+                    "Manuale",
+                    "Agente-based"
+                ],
+                correct: 1,
+                explanation: "Terraform è Dichiarativo: definisci lo *stato desiderato* finale e il tool calcola come raggiungerlo. Ansible è spesso considerato imperativo/ibrido."
+            },
+            {
+                id: 10,
+                question: "Cosa si intende per 'Blameless Postmortem'?",
+                options: [
+                    "Ignorare gli errori per non offendere nessuno",
+                    "Analizzare un incidente focalizzandosi sul processo e non sulla colpa individuale",
+                    "Licenziare il responsabile dell'errore",
+                    "Un report generato automaticamente dai log"
+                ],
+                correct: 1,
+                explanation: "È una pratica culturale fondamentale: si cerca di capire come il sistema ha permesso l'errore per migliorarlo, senza punire le persone."
+            }
+        ];
+
+        function renderQuiz() {
+            const container = document.getElementById('quiz-container');
+            container.innerHTML = questions.map((q, index) => `
+                <div class="question-block border border-slate-200 rounded-lg p-6 bg-white" id="q-${index}">
+                    <h3 class="font-bold text-lg mb-4 text-slate-800"><span class="text-blue-500 mr-2">${index + 1}.</span>${q.question}</h3>
+                    <div class="space-y-3">
+                        ${q.options.map((opt, optIndex) => `
+                            <label class="option-label block relative">
+                                <input type="radio" name="question-${index}" value="${optIndex}" class="option-input absolute opacity-0 w-0 h-0">
+                                <div class="option-content border border-slate-300 rounded-md p-3 text-slate-600 hover:border-blue-400">
+                                    ${opt}
+                                </div>
+                            </label>
+                        `).join('')}
+                    </div>
+                    <div class="explanation mt-4 p-4 bg-blue-50 text-blue-800 rounded-md text-sm border-l-4 border-blue-500">
+                        <strong><i class="fas fa-info-circle mr-1"></i> Spiegazione:</strong> ${q.explanation}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function checkAnswers() {
+            let score = 0;
+            let allAnswered = true;
+
+            questions.forEach((q, index) => {
+                const selected = document.querySelector(`input[name="question-${index}"]:checked`);
+                const block = document.getElementById(`q-${index}`);
+                const explanation = block.querySelector('.explanation');
+                
+                if (!selected) {
+                    allAnswered = false;
+                    return;
+                }
+
+                const selectedVal = parseInt(selected.value);
+                const options = block.querySelectorAll('.option-content');
+
+                // Reset styles
+                options.forEach(opt => opt.classList.remove('correct', 'incorrect'));
+
+                if (selectedVal === q.correct) {
+                    score++;
+                    options[selectedVal].classList.add('correct');
+                    options[selectedVal].innerHTML += ' <i class="fas fa-check float-right mt-1"></i>';
+                } else {
+                    options[selectedVal].classList.add('incorrect');
+                    options[selectedVal].innerHTML += ' <i class="fas fa-times float-right mt-1"></i>';
+                    options[q.correct].classList.add('correct'); // Show correct answer
+                }
+
+                explanation.style.display = 'block';
+            });
+
+            if (!allAnswered) {
+                alert("Per favore rispondi a tutte le domande prima di verificare.");
+                return;
+            }
+
+            // Show Result
+            const resultArea = document.getElementById('result-area');
+            const scoreDisplay = document.getElementById('score-display');
+            const feedbackText = document.getElementById('feedback-text');
+            const submitBtn = document.getElementById('submit-btn');
+
+            resultArea.classList.remove('hidden');
+            submitBtn.classList.add('hidden');
+            scoreDisplay.innerText = `${score} / ${questions.length}`;
+
+            if (score === 10) {
+                scoreDisplay.classList.add('text-green-600');
+                feedbackText.innerText = "Eccellente! Sei pronto per il Day 2.";
+            } else if (score >= 7) {
+                scoreDisplay.classList.add('text-blue-600');
+                feedbackText.innerText = "Buon lavoro! Ripassa i concetti evidenziati.";
+            } else {
+                scoreDisplay.classList.add('text-red-600');
+                feedbackText.innerText = "Ti consiglio di rileggere le slide del Day 1.";
+            }
+            
+            // Scroll to bottom
+            resultArea.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Init
+        renderQuiz();
+    </script>
+</body>
+</html>
