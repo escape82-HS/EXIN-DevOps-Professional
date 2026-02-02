@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab: GitHub Actions & Docker | EXIN DevOps Professional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        code, pre { font-family: 'Fira Code', monospace; }
+        
+        .step-content { display: none; }
+        .step-content.active { display: block; animation: fadeIn 0.5s; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .code-block {
+            position: relative;
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: #334155;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: background 0.2s;
+        }
+
+        .copy-btn:hover { background: #475569; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <!-- Sidebar -->
+    <div class="flex h-screen overflow-hidden">
+        <aside class="w-64 bg-slate-900 text-white flex-shrink-0 hidden md:flex flex-col">
+            <div class="p-6 border-b border-slate-700">
+                <h1 class="text-xl font-bold text-blue-400">DevOps Lab</h1>
+                <p class="text-xs text-slate-400 mt-1">EXIN Professional Level</p>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-4">
+                <ul class="space-y-1">
+                    <li><button onclick="showStep(0)" class="nav-btn w-full text-left px-6 py-3 hover:bg-slate-800 transition bg-slate-800 border-l-4 border-blue-500" data-step="0">1. Introduzione & Prerequisiti</button></li>
+                    <li><button onclick="showStep(1)" class="nav-btn w-full text-left px-6 py-3 hover:bg-slate-800 transition border-l-4 border-transparent" data-step="1">2. Setup del Progetto</button></li>
+                    <li><button onclick="showStep(2)" class="nav-btn w-full text-left px-6 py-3 hover:bg-slate-800 transition border-l-4 border-transparent" data-step="2">3. Docker Hub & Secrets</button></li>
+                    <li><button onclick="showStep(3)" class="nav-btn w-full text-left px-6 py-3 hover:bg-slate-800 transition border-l-4 border-transparent" data-step="3">4. Creazione Pipeline YAML</button></li>
+                    <li><button onclick="showStep(4)" class="nav-btn w-full text-left px-6 py-3 hover:bg-slate-800 transition border-l-4 border-transparent" data-step="4">5. Analisi del Codice</button></li>
+                    <li><button onclick="showStep(5)" class="nav-btn w-full text-left px-6 py-3 hover:bg-slate-800 transition border-l-4 border-transparent" data-step="5">6. Esecuzione e Verifica</button></li>
+                </ul>
+            </nav>
+            <div class="p-4 border-t border-slate-700 text-xs text-center text-slate-500">
+                &copy; DevOps Training Material
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto p-8 relative">
+            
+            <!-- Mobile Header -->
+            <div class="md:hidden mb-6 pb-4 border-b border-slate-200">
+                <h1 class="text-2xl font-bold text-slate-900">DevOps Lab: GitHub to Docker</h1>
+                <p class="text-sm text-slate-500">Usa un tablet o desktop per la migliore esperienza.</p>
+            </div>
+
+            <!-- Step 0: Intro -->
+            <div id="step-0" class="step-content active max-w-3xl mx-auto">
+                <span class="bg-blue-100 text-blue-800 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded">Modulo CI/CD</span>
+                <h2 class="text-3xl font-bold mt-2 mb-4">Costruire una Pipeline Automatizzata</h2>
+                <p class="text-lg text-slate-600 mb-6">
+                    In questo laboratorio, applicheremo i principi della <strong>Continuous Integration</strong> e <strong>Continuous Delivery</strong>. Creeremo un workflow che, ad ogni push su GitHub, costruisce automaticamente un'immagine Docker e la pubblica su un registro (Docker Hub).
+                </p>
+                
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200 mb-6">
+                    <h3 class="font-bold text-lg mb-3"><i class="fas fa-tools text-blue-500 mr-2"></i>Prerequisiti</h3>
+                    <ul class="list-disc list-inside space-y-2 text-slate-700">
+                        <li>Un account <strong>GitHub</strong>.</li>
+                        <li>Un account <strong>Docker Hub</strong>.</li>
+                        <li>Git installato sulla macchina locale (opzionale se usi l'editor web di GitHub).</li>
+                    </ul>
+                </div>
+
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                    <p class="text-sm text-yellow-700">
+                        <strong>Obiettivo EXIN:</strong> Comprendere come l'automazione riduce l'errore umano e accelera il time-to-market ("Shift Left").
+                    </p>
+                </div>
+                
+                <button onclick="showStep(1)" class="mt-8 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold">Inizia il Laboratorio <i class="fas fa-arrow-right ml-2"></i></button>
+            </div>
+
+            <!-- Step 1: Project Setup -->
+            <div id="step-1" class="step-content max-w-3xl mx-auto">
+                <h2 class="text-3xl font-bold mb-4">1. Setup del Progetto</h2>
+                <p class="mb-4">Creeremo una semplice applicazione web statica e il relativo Dockerfile.</p>
+
+                <div class="space-y-6">
+                    <!-- Action 1 -->
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                        <h3 class="font-bold text-lg mb-2">A. Crea il Repository</h3>
+                        <ol class="list-decimal list-inside text-slate-700 space-y-2">
+                            <li>Vai su GitHub e crea un nuovo repository chiamato <code>devops-docker-lab</code>.</li>
+                            <li>Clona il repo o usa l'interfaccia web per creare i file.</li>
+                        </ol>
+                    </div>
+
+                    <!-- Action 2 -->
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                        <h3 class="font-bold text-lg mb-2">B. Crea l'applicazione (index.html)</h3>
+                        <p class="text-sm text-slate-600">Crea un file chiamato <code>index.html</code> nella root del progetto:</p>
+                        <div class="code-block">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copia</button>
+<pre><code>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;body&gt;
+&lt;h1&gt;Hello DevOps Professional!&lt;/h1&gt;
+&lt;p&gt;Questa immagine è stata costruita automaticamente.&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+                        </div>
+                    </div>
+
+                    <!-- Action 3 -->
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                        <h3 class="font-bold text-lg mb-2">C. Crea il Dockerfile</h3>
+                        <p class="text-sm text-slate-600">Crea un file chiamato <code>Dockerfile</code> (senza estensione):</p>
+                        <div class="code-block">
+                            <button class="copy-btn" onclick="copyToClipboard(this)">Copia</button>
+<pre><code># Usa un'immagine leggera di Nginx
+FROM nginx:alpine
+
+# Copia il file html nella directory di default di Nginx
+COPY index.html /usr/share/nginx/html/index.html
+
+# Espone la porta 80
+EXPOSE 80</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between mt-8">
+                    <button onclick="showStep(0)" class="text-slate-500 hover:text-slate-700">Indietro</button>
+                    <button onclick="showStep(2)" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Prossimo: Credenziali</button>
+                </div>
+            </div>
+
+            <!-- Step 2: Secrets -->
+            <div id="step-2" class="step-content max-w-3xl mx-auto">
+                <h2 class="text-3xl font-bold mb-4">2. Gestione Sicurezza e Secrets</h2>
+                <p class="mb-4 text-slate-600">Mai inserire password in chiaro nel codice! Useremo i <strong>GitHub Secrets</strong> per iniettare le credenziali Docker Hub in modo sicuro durante l'esecuzione della pipeline.</p>
+
+                <div class="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+                    <h4 class="font-bold text-red-700">Security Best Practice</h4>
+                    <p class="text-sm text-red-600">Nel corso EXIN, la gestione sicura delle configurazioni è un pilastro fondamentale.</p>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-lg mb-4">Configurazione su GitHub</h3>
+                    <ol class="list-decimal list-inside space-y-3 text-slate-700">
+                        <li>Vai nel tuo repository GitHub -> <strong>Settings</strong>.</li>
+                        <li>Nel menu a sinistra, clicca su <strong>Secrets and variables</strong> -> <strong>Actions</strong>.</li>
+                        <li>Clicca su <strong>New repository secret</strong> per aggiungere le seguenti due variabili:</li>
+                    </ol>
+
+                    <div class="mt-4 grid gap-4 md:grid-cols-2">
+                        <div class="border p-4 rounded bg-slate-50">
+                            <span class="font-mono font-bold text-blue-600">DOCKER_USERNAME</span>
+                            <p class="text-sm mt-1">Il tuo ID utente di Docker Hub.</p>
+                        </div>
+                        <div class="border p-4 rounded bg-slate-50">
+                            <span class="font-mono font-bold text-blue-600">DOCKER_PASSWORD</span>
+                            <p class="text-sm mt-1">La tua password di Docker Hub (o meglio, un Access Token generato su Docker Hub).</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-between mt-8">
+                    <button onclick="showStep(1)" class="text-slate-500 hover:text-slate-700">Indietro</button>
+                    <button onclick="showStep(3)" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Prossimo: Pipeline</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Workflow -->
+            <div id="step-3" class="step-content max-w-3xl mx-auto">
+                <h2 class="text-3xl font-bold mb-4">3. Definizione della Pipeline</h2>
+                <p class="mb-4">Ora istruiamo GitHub su cosa fare. GitHub Actions usa file YAML situati nella cartella <code>.github/workflows/</code>.</p>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                    <h3 class="font-bold text-lg mb-2">Crea il file Workflow</h3>
+                    <p class="text-slate-600 mb-2">Crea il percorso cartelle e il file: <code>.github/workflows/docker-publish.yml</code></p>
+                    
+                    <div class="code-block">
+                        <button class="copy-btn" onclick="copyToClipboard(this)">Copia</button>
+<pre><code>name: Build and Push Docker Image
+
+# Trigger: Quando eseguire la pipeline?
+on:
+push:
+  branches: [ "main" ]
+
+jobs:
+build-and-push:
+  runs-on: ubuntu-latest
+  
+  steps:
+    # 1. Scarica il codice dal repository
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # 2. Configura QEMU (opzionale, per build multi-architettura)
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+
+    # 3. Configura Docker Buildx (il motore di build avanzato)
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    # 4. Login su Docker Hub usando i Secrets
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    # 5. Build e Push dell'immagine
+    - name: Build and push
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: true
+        # Sostituisci 'tuo-username' con il tuo vero username Docker Hub se vuoi hardcodarlo, 
+        # ma qui usiamo il secret per il tag dinamico o un nome fisso.
+        tags: ${{ secrets.DOCKER_USERNAME }}/my-devops-app:latest</code></pre>
+                    </div>
+                </div>
+
+                <div class="flex justify-between mt-8">
+                    <button onclick="showStep(2)" class="text-slate-500 hover:text-slate-700">Indietro</button>
+                    <button onclick="showStep(4)" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Prossimo: Spiegazione</button>
+                </div>
+            </div>
+
+            <!-- Step 4: Analysis -->
+            <div id="step-4" class="step-content max-w-3xl mx-auto">
+                <h2 class="text-3xl font-bold mb-4">4. Analisi del Workflow</h2>
+                <p class="mb-6">Per l'esame EXIN, è importante capire la logica dietro lo script YAML.</p>
+
+                <div class="grid gap-6">
+                    <div class="bg-white p-4 rounded border-l-4 border-purple-500 shadow-sm">
+                        <h4 class="font-bold text-purple-700">Event (Trigger)</h4>
+                        <code class="text-sm bg-slate-100 p-1">on: push: branches: [ "main" ]</code>
+                        <p class="text-sm text-slate-600 mt-1">Definisce che la pipeline parte solo quando c'è un commit sul branch 'main'. Questo è il concetto di <strong>Continuous Integration</strong>.</p>
+                    </div>
+
+                    <div class="bg-white p-4 rounded border-l-4 border-green-500 shadow-sm">
+                        <h4 class="font-bold text-green-700">Runner</h4>
+                        <code class="text-sm bg-slate-100 p-1">runs-on: ubuntu-latest</code>
+                        <p class="text-sm text-slate-600 mt-1">GitHub fornisce una macchina virtuale (container effimero) con Ubuntu per eseguire i comandi.</p>
+                    </div>
+
+                    <div class="bg-white p-4 rounded border-l-4 border-blue-500 shadow-sm">
+                        <h4 class="font-bold text-blue-700">Steps & Actions</h4>
+                        <p class="text-sm text-slate-600 mt-1">Invece di scrivere script shell complessi, usiamo "Actions" pre-costruite (es. <code>docker/login-action</code>). Questo promuove la riusabilità e la standardizzazione.</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-between mt-8">
+                    <button onclick="showStep(3)" class="text-slate-500 hover:text-slate-700">Indietro</button>
+                    <button onclick="showStep(5)" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Prossimo: Test Finale</button>
+                </div>
+            </div>
+
+            <!-- Step 5: Verify -->
+            <div id="step-5" class="step-content max-w-3xl mx-auto">
+                <h2 class="text-3xl font-bold mb-4">5. Esecuzione e Verifica</h2>
+                <p class="mb-4">È il momento della verità. Vediamo la pipeline in azione.</p>
+
+                <div class="space-y-6">
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                        <h3 class="font-bold text-lg mb-2">1. Commit e Push</h3>
+                        <p class="text-slate-600 mb-2">Se hai creato i file localmente, esegui:</p>
+                        <div class="code-block">
+<pre><code>git add .
+git commit -m "Aggiunta pipeline CI/CD Docker"
+git push origin main</code></pre>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                        <h3 class="font-bold text-lg mb-2">2. Monitoraggio</h3>
+                        <ul class="list-disc list-inside text-slate-700 space-y-2">
+                            <li>Vai sulla tab <strong>Actions</strong> del tuo repository GitHub.</li>
+                            <li>Dovresti vedere un workflow in esecuzione (giallo) o completato (verde).</li>
+                            <li>Clicca sul nome del workflow per vedere i log in tempo reale di ogni step.</li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+                        <h3 class="font-bold text-lg mb-2">3. Verifica su Docker Hub</h3>
+                        <p class="text-slate-600">
+                            Una volta che l'azione è verde, vai sul tuo profilo <a href="https://hub.docker.com/" target="_blank" class="text-blue-500 underline">Docker Hub</a>.
+                            Dovresti vedere un nuovo repository <code>my-devops-app</code> con il tag <code>latest</code> aggiornato pochi secondi fa.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-8 p-6 bg-green-50 rounded-lg border border-green-200 text-center">
+                    <h3 class="text-2xl font-bold text-green-700 mb-2">🎉 Complimenti!</h3>
+                    <p class="text-green-800">Hai creato con successo una pipeline di Continuous Delivery.</p>
+                    <p class="text-sm text-green-600 mt-2">Hai trasformato codice sorgente in un artefatto distribuibile (Docker Image) in modo completamente automatico.</p>
+                </div>
+
+                <div class="flex justify-start mt-8">
+                    <button onclick="showStep(4)" class="text-slate-500 hover:text-slate-700">Indietro</button>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        function showStep(stepIndex) {
+            // Hide all steps
+            document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+            
+            // Show target step
+            document.getElementById(`step-${stepIndex}`).classList.add('active');
+            
+            // Update Sidebar
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('bg-slate-800', 'border-blue-500');
+                el.classList.add('border-transparent');
+            });
+            
+            const activeBtn = document.querySelector(`.nav-btn[data-step="${stepIndex}"]`);
+            if(activeBtn) {
+                activeBtn.classList.add('bg-slate-800', 'border-blue-500');
+                activeBtn.classList.remove('border-transparent');
+            }
+        }
+
+        function copyToClipboard(button) {
+            const pre = button.nextElementSibling;
+            const code = pre.innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                const originalText = button.innerText;
+                button.innerText = 'Copiato!';
+                setTimeout(() => {
+                    button.innerText = originalText;
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+</html>
