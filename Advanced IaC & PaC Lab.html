@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab: IaC, PaC (OPA/Checkov) & jq</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #212529;
+            --primary: #6c5ce7; /* Purple for Terraform */
+            --secondary: #00b894; /* Green for OPA */
+            --accent: #e17055; /* Orange for Checkov */
+            --code-bg: #2d3436;
+            --code-text: #dfe6e9;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid var(--primary);
+        }
+
+        h1 { color: #2d3436; }
+        h2 { color: var(--primary); margin-top: 0; }
+        h3 { margin-top: 20px; color: #444; }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: white;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .bg-tf { background-color: var(--primary); }
+        .bg-opa { background-color: var(--secondary); }
+        .bg-checkov { background-color: var(--accent); }
+        .bg-jq { background-color: #0984e3; }
+
+        .step {
+            background: var(--card-bg);
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-left: 5px solid var(--primary);
+        }
+
+        .step.pac { border-left-color: var(--secondary); }
+        .step.jq { border-left-color: #0984e3; }
+
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .filename {
+            font-family: monospace;
+            background-color: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: #d63384;
+            font-size: 0.9em;
+        }
+
+        .explanation {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 10px 15px;
+            margin: 15px 0;
+            font-size: 0.95em;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🛠️ Lab: Advanced IaC & PaC</h1>
+        <p>Deploy EC2 con Terraform, validazione con Checkov & OPA, manipolazione dati con jq.</p>
+        <div>
+            <span class="badge bg-tf">Terraform</span>
+            <span class="badge bg-checkov">Checkov</span>
+            <span class="badge bg-opa">OPA</span>
+            <span class="badge bg-jq">jq</span>
+        </div>
+    </header>
+
+    <div class="step">
+        <h2>📋 Prerequisiti</h2>
+        <p>Assicurati di avere installato:</p>
+        <ul>
+            <li><strong>Terraform</strong></li>
+            <li><strong>AWS CLI</strong> (configurato con <code>aws configure</code>)</li>
+            <li><strong>Checkov</strong> (<code>pip install checkov</code>)</li>
+            <li><strong>OPA</strong> (Open Policy Agent - scarica l'eseguibile dal sito ufficiale)</li>
+            <li><strong>jq</strong> (Tool per processare JSON)</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h2>Passo 1: Infrastructure as Code (Terraform)</h2>
+        <p>Creiamo un file Terraform per una istanza EC2 Free Tier. Useremo un <code>data source</code> per trovare l'ultima AMI Amazon Linux automaticamente.</p>
+        
+        <p>Crea il file <span class="filename">main.tf</span>:</p>
+        <pre><code>provider "aws" {
+  region = "us-east-1"
+}
+
+# Trova l'ultima AMI Amazon Linux 2023 (Free Tier eligible)
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+  filter {
+    name   = "name"
+    values = ["al2023-ami-2023.*-x86_64"]
+  }
+}
+
+# Risorsa EC2
+resource "aws_instance" "web_server" {
+  ami           = data.aws_ami.amazon_linux.id
+  instance_type = "t2.micro" # Free tier
+
+  tags = {
+    Name = "Lab-Instance"
+    # Nota: Manca il tag "Environment", lo useremo per il test OPA
+  }
+}
+
+# Output in formato JSON-friendly
+output "instance_details" {
+  value = {
+    id        = aws_instance.web_server.id
+    public_ip = aws_instance.web_server.public_ip
+    ami       = aws_instance.web_server.ami
+    region    = "us-east-1"
+  }
+}</code></pre>
+        <div class="explanation">
+            <strong>Nota:</strong> Abbiamo definito un output strutturato. Questo sarà fondamentale per l'esercizio con <code>jq</code> alla fine.
+        </div>
+    </div>
+
+    <div class="step pac">
+        <h2>Passo 2: Security Scanning (Checkov)</h2>
+        <p>Prima di fare qualsiasi cosa, verifichiamo se il nostro codice è sicuro. Checkov analizza il file statico <code>.tf</code>.</p>
+        
+        <pre><code>checkov -d .</code></pre>
+
+        <p><strong>Cosa aspettarsi:</strong> Checkov fallirà (FAILED). Ti segnalerà che:</p>
+        <ul>
+            <li>L'istanza non è criptata (EBS encryption missing).</li>
+            <li>Manca il monitoraggio dettagliato.</li>
+        </ul>
+        <p>Questo è il <strong>"Shift Left"</strong>: trovare i problemi di sicurezza sul laptop dello sviluppatore, non in produzione.</p>
+    </div>
+
+    <div class="step pac">
+        <h2>Passo 3: Policy as Code (OPA)</h2>
+        <p>Checkov controlla la sicurezza generica. <strong>OPA</strong> serve per le regole aziendali personalizzate.
+        <br><em>Esempio regola aziendale: "Tutte le risorse devono avere il tag 'Environment'".</em></p>
+
+        <h3>3.1 Genera il Piano JSON</h3>
+        <p>OPA non legge i file .tf, legge il JSON. Dobbiamo convertire il piano di Terraform.</p>
+        <pre><code>terraform init
+terraform plan -out tfplan.binary
+terraform show -json tfplan.binary > tfplan.json</code></pre>
+
+        <h3>3.2 Scrivi la Policy OPA</h3>
+        <p>Crea un file chiamato <span class="filename">policy.rego</span>:</p>
+        <pre><code>package terraform.tags
+
+import input.planned_values.root_module.resources
+
+default allow = false
+
+# Regola: Nega se manca il tag Environment
+deny[msg] {
+    r := resources[_]
+    r.type == "aws_instance"
+    not r.values.tags.Environment
+    msg := sprintf("La risorsa %v manca del tag obbligatorio 'Environment'", [r.address])
+}
+
+# Se non ci sono "deny", allora allow è true
+allow {
+    count(deny) == 0
+}</code></pre>
+
+        <h3>3.3 Valuta la Policy</h3>
+        <pre><code>opa eval --format pretty --input tfplan.json --data policy.rego "data.terraform.tags.deny"</code></pre>
+        
+        <p><strong>Risultato:</strong> Dovresti vedere un output JSON con la stringa di errore definita nella policy, perché nel <code>main.tf</code> manca il tag Environment.</p>
+    </div>
+
+    <div class="step">
+        <h2>Passo 4: Deploy (Apply)</h2>
+        <p>Ignoriamo per un attimo gli errori di policy per procedere con il lab.</p>
+        <pre><code>terraform apply --auto-approve</code></pre>
+        <p>Attendi che AWS crei l'istanza.</p>
+    </div>
+
+    <div class="step jq">
+        <h2>Passo 5: Manipolazione JSON con jq</h2>
+        <p>Spesso nelle pipeline CI/CD devi estrarre un IP o un ID per passarlo allo step successivo (es. Ansible o script di test). Usiamo <code>jq</code> per questo.</p>
+
+        <h3>5.1 Ottenere l'Output Grezzo</h3>
+        <pre><code>terraform output -json</code></pre>
+
+        <h3>5.2 Esercizi jq</h3>
+        <p>Prova questi comandi nel terminale:</p>
+
+        <p><strong>A. Estrarre solo l'IP Pubblico (Stringa pulita):</strong></p>
+        <pre><code>terraform output -json | jq -r '.instance_details.value.public_ip'</code></pre>
+        <div class="explanation">
+            <code>-r</code> (raw) rimuove le virgolette. Utile per salvare in variabili bash: <code>IP=$(...)</code>.
+        </div>
+
+        <p><strong>B. Creare un file inventory per Ansible al volo:</strong></p>
+        <pre><code>terraform output -json | jq -r '"[webserver]\n" + .instance_details.value.public_ip' > inventory.ini</code></pre>
+        <p>Controlla il file <code>inventory.ini</code> creato.</p>
+
+        <p><strong>C. Analizzare lo stato completo (Avanzato):</strong></p>
+        <p>Possiamo interrogare lo stato completo di Terraform per trovare info non presenti negli output.</p>
+        <pre><code>terraform show -json | jq '.values.root_module.resources[0].values.private_ip'</code></pre>
+    </div>
+
+    <div class="step" style="border-left-color: #d63031;">
+        <h2>Passo 6: Pulizia</h2>
+        <p>Distruggi le risorse per evitare costi su AWS.</p>
+        <pre><code>terraform destroy --auto-approve
+rm tfplan.binary tfplan.json inventory.ini</code></pre>
+    </div>
+
+    <footer>
+        <p>Generato da Monica AI - IaC & PaC Workshop</p>
+    </footer>
+</div>
+
+</body>
+</html>
