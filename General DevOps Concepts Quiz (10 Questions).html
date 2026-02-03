@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz: Concetti DevOps & IaC (10 Domande)</title>
+    <style>
+        :root {
+            --bg-color: #222831;
+            --card-bg: #393e46;
+            --text-color: #00adb5;
+            --text-body: #eeeeee;
+            --accent: #00adb5;
+            --correct: #00b894;
+            --wrong: #d63031;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-body);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid var(--text-color);
+            padding-bottom: 20px;
+        }
+
+        h1 { color: var(--text-color); margin: 0; }
+        p.subtitle { color: #a0a0a0; font-style: italic; }
+
+        .question-card {
+            background-color: var(--card-bg);
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            border: 1px solid #555;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .question-text {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        pre {
+            background-color: #222;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 0.9em;
+            border-left: 3px solid var(--text-color);
+            color: #e0e0e0;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option-btn {
+            background-color: #2d3436;
+            color: white;
+            border: 1px solid #555;
+            padding: 12px;
+            text-align: left;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1em;
+        }
+
+        .option-btn:hover {
+            background-color: #4b5563;
+            border-color: var(--accent);
+        }
+
+        .option-btn.selected-correct {
+            background-color: var(--correct);
+            border-color: var(--correct);
+            color: white;
+        }
+
+        .option-btn.selected-wrong {
+            background-color: var(--wrong);
+            border-color: var(--wrong);
+            opacity: 0.7;
+        }
+
+        .feedback {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: rgba(0,0,0,0.2);
+            border-radius: 5px;
+            display: none;
+            font-size: 0.9em;
+        }
+
+        .score-board {
+            text-align: center;
+            font-size: 1.5em;
+            margin-top: 30px;
+            padding: 20px;
+            background: var(--text-color);
+            color: #222831;
+            font-weight: bold;
+            border-radius: 10px;
+            display: none;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🧠 Quiz: Concetti DevOps & IaC</h1>
+        <p class="subtitle">Testa la tua comprensione dei principi fondamentali (10 Domande).</p>
+    </header>
+
+    <div id="quiz-container">
+        <!-- Le domande verranno iniettate qui via JS -->
+    </div>
+
+    <div id="score-board" class="score-board">
+        <!-- Risultato finale -->
+    </div>
+</div>
+
+<script>
+    const questions = [
+        {
+            id: 1,
+            text: "Nel contesto dell'Infrastructure as Code (IaC), cosa si intende per 'Configuration Drift'?",
+            code: null,
+            options: [
+                "Quando il codice viene spostato da un repository Git a un altro.",
+                "Quando le risorse reali (es. su Cloud) vengono modificate manualmente e non corrispondono più alla definizione nel codice.",
+                "Quando si aggiorna la versione del software IaC.",
+                "Quando due sviluppatori lavorano sullo stesso file contemporaneamente."
+            ],
+            correct: 1,
+            explanation: "Il Drift avviene quando la realtà diverge dal codice (es. qualcuno cambia una porta di sicurezza manualmente dalla console AWS), rendendo l'IaC non più affidabile."
+        },
+        {
+            id: 2,
+            text: "Qual è lo scopo principale dell'approccio 'Policy as Code' (PaC) in una pipeline CI/CD?",
+            code: null,
+            options: [
+                "Ottimizzare i costi del cloud riducendo le risorse inutilizzate.",
+                "Automatizzare la verifica di regole di compliance e sicurezza (es. 'Niente SSH aperto a tutti') prima che l'infrastruttura venga creata.",
+                "Scrivere le policy aziendali in documenti Word generati automaticamente.",
+                "Monitorare le performance delle applicazioni in produzione."
+            ],
+            correct: 1,
+            explanation: "Il PaC serve a trattare le regole di sicurezza come codice software, bloccando automaticamente i deploy che violano le regole definite."
+        },
+        {
+            id: 3,
+            text: "Stai usando un tool per processare JSON (come jq) per estrarre l'IP del SECONDO server da questa risposta API. Qual è la sintassi logica corretta?",
+            code: `// Risposta API
+{
+  "servers": [
+    {"name": "alpha", "ip": "10.0.0.1"},
+    {"name": "beta", "ip": "10.0.0.2"}
+  ]
+}`,
+            options: [
+                ".servers[2].ip",
+                ".servers[1].ip",
+                ".servers.beta.ip",
+                ".servers[0].ip"
+            ],
+            correct: 1,
+            explanation: "Negli array JSON, l'indice parte da 0. Quindi il primo elemento è [0] e il secondo è [1]."
+        },
+        {
+            id: 4,
+            text: "Analisi Metriche DORA. Il tuo team rilascia codice in produzione 10 volte al giorno (High Frequency), ma il 40% delle volte il deploy fallisce e richiede un fix. Qual è il problema principale?",
+            code: null,
+            options: [
+                "Il team è troppo lento.",
+                "Il team manca di 'Quality Gates' (test automatici) efficaci nella pipeline.",
+                "Il team dovrebbe smettere di usare il Cloud.",
+                "È un comportamento normale per un team DevOps maturo."
+            ],
+            correct: 1,
+            explanation: "Rilasciare velocemente codice rotto non è DevOps, è caos. L'alto 'Change Failure Rate' indica che mancano controlli di qualità prima del deploy."
+        },
+        {
+            id: 5,
+            text: "Nella maggior parte dei linguaggi IaC dichiarativi, come viene determinato l'ordine di creazione delle risorse (es. creare prima la rete, poi il server)?",
+            code: null,
+            options: [
+                "Le risorse vengono create in ordine alfabetico per nome.",
+                "Le risorse vengono create nell'ordine in cui sono scritte nel file (dall'alto in basso).",
+                "Il tool costruisce un 'Grafo delle Dipendenze' basato sui riferimenti tra le risorse (es. il server usa l'ID della rete).",
+                "È casuale."
+            ],
+            correct: 2,
+            explanation: "I tool IaC sono intelligenti: se la Risorsa B usa un attributo della Risorsa A, il tool capisce automaticamente che deve creare prima A."
+        },
+        {
+            id: 6,
+            text: "Durante una scansione di sicurezza automatica (SAST), viene rilevata una vulnerabilità che però è intenzionale (es. un bucket pubblico per ospitare il sito web statico). Qual è la best practice per gestire questo caso?",
+            code: null,
+            options: [
+                "Disattivare completamente lo scanner di sicurezza.",
+                "Ignorare l'errore e sperare che la pipeline passi.",
+                "Utilizzare un meccanismo di soppressione esplicito (es. commento nel codice o file di configurazione) per documentare l'eccezione.",
+                "Cambiare tool di scansione."
+            ],
+            correct: 2,
+            explanation: "Le eccezioni (False Positives) vanno gestite esplicitamente nel codice (es. commenti di skip) per lasciare traccia del motivo per cui quella regola di sicurezza è stata violata intenzionalmente."
+        },
+        {
+            id: 7,
+            text: "Networking nei Container. Se un container Docker deve comunicare con un servizio che gira sulla macchina host (fuori da Docker), perché non può usare semplicemente 'localhost'?",
+            code: null,
+            options: [
+                "Perché 'localhost' dentro il container si riferisce al container stesso, non alla macchina ospite.",
+                "Perché Docker disabilita la rete per default.",
+                "Perché localhost è un indirizzo IP non valido.",
+                "Può usarlo tranquillamente, funziona sempre."
+            ],
+            correct: 0,
+            explanation: "Ogni container ha il suo stack di rete isolato. 'Localhost' (127.0.0.1) dentro il container è il container stesso. Per uscire servono indirizzi speciali (es. host.docker.internal)."
+        },
+        {
+            id: 8,
+            text: "Scripting CI/CD. In uno script Bash usato in una pipeline, perché è importante usare il comando 'set -e' all'inizio?",
+            code: `#!/bin/bash
+set -e
+run_tests
+deploy_app`,
+            options: [
+                "Per abilitare la modalità di debug.",
+                "Per far sì che lo script termini immediatamente se un comando fallisce (es. i test), evitando di eseguire i comandi successivi (es. il deploy).",
+                "Per eseguire i comandi in parallelo.",
+                "Per ignorare tutti gli errori e procedere comunque."
+            ],
+            correct: 1,
+            explanation: "'set -e' (exit on error) è fondamentale per evitare che una pipeline continui a eseguire step (come il deploy) se uno step precedente (come i test) è fallito."
+        },
+        {
+            id: 9,
+            text: "Cosa significa che uno script o un'operazione di automazione è 'Idempotente'?",
+            code: null,
+            options: [
+                "Che lo script viene eseguito molto velocemente.",
+                "Che lo script può essere eseguito più volte senza cambiare il risultato finale e senza causare errori (es. se la cartella esiste già, non fallisce).",
+                "Che lo script richiede privilegi di amministratore.",
+                "Che lo script viene eseguito solo una volta e poi si autocancella."
+            ],
+            correct: 1,
+            explanation: "L'idempotenza è cruciale in DevOps. Se rilanci una pipeline di deploy, non deve creare 10 server identici, ma deve capire che il server esiste già e non fare nulla."
+        },
+        {
+            id: 10,
+            text: "Gestione dei Segreti (Secrets Management). Dove NON dovresti mai salvare una API Key o una Password?",
+            code: null,
+            options: [
+                "In una variabile d'ambiente iniettata a runtime.",
+                "In un servizio di Vault (es. AWS Secrets Manager, HashiCorp Vault).",
+                "Direttamente nel codice sorgente committato su Git.",
+                "In un file .env che è escluso da Git tramite .gitignore."
+            ],
+            correct: 2,
+            explanation: "Hardcodare le credenziali nel codice sorgente è la vulnerabilità numero 1. Una volta su Git, il segreto è compromesso per sempre."
+        }
+    ];
+
+    let score = 0;
+    const quizContainer = document.getElementById('quiz-container');
+    const scoreBoard = document.getElementById('score-board');
+
+    function renderQuiz() {
+        questions.forEach((q, index) => {
+            const card = document.createElement('div');
+            card.className = 'question-card';
+            
+            let codeBlock = '';
+            if (q.code) {
+                codeBlock = `<pre>${q.code.replace(/</g, "&lt;")}</pre>`;
+            }
+
+            let optionsHtml = '';
+            q.options.forEach((opt, optIndex) => {
+                optionsHtml += `<button class="option-btn" onclick="checkAnswer(this, ${index}, ${optIndex})">${opt}</button>`;
+            });
+
+            card.innerHTML = `
+                <div class="question-text">${index + 1}. ${q.text}</div>
+                ${codeBlock}
+                <div class="options">${optionsHtml}</div>
+                <div class="feedback" id="feedback-${index}"></div>
+            `;
+            quizContainer.appendChild(card);
+        });
+    }
+
+    function checkAnswer(btn, qIndex, optIndex) {
+        const q = questions[qIndex];
+        const feedbackEl = document.getElementById(`feedback-${qIndex}`);
+        const allBtns = btn.parentElement.children;
+
+        for (let b of allBtns) {
+            b.disabled = true;
+            b.style.cursor = 'default';
+        }
+
+        if (optIndex === q.correct) {
+            btn.classList.add('selected-correct');
+            feedbackEl.style.display = 'block';
+            feedbackEl.style.color = '#00b894';
+            feedbackEl.innerHTML = `<strong>Corretto!</strong> ${q.explanation}`;
+            score++;
+        } else {
+            btn.classList.add('selected-wrong');
+            allBtns[q.correct].classList.add('selected-correct');
+            feedbackEl.style.display = 'block';
+            feedbackEl.style.color = '#ff7675';
+            feedbackEl.innerHTML = `<strong>Sbagliato.</strong> ${q.explanation}`;
+        }
+
+        const feedbacks = document.querySelectorAll('.feedback[style*="block"]');
+        if (feedbacks.length === questions.length) {
+            showScore();
+        }
+    }
+
+    function showScore() {
+        scoreBoard.style.display = 'block';
+        let msg = "";
+        if (score === questions.length) msg = "🏆 PERFECT SCORE! Sei pronto per la produzione.";
+        else if (score >= 7) msg = "👍 Ottimo lavoro, hai solide basi.";
+        else msg = "📚 C'è ancora da studiare sui fondamentali.";
+        
+        scoreBoard.innerHTML = `Punteggio Finale: ${score} su ${questions.length}<br><span style="font-size:0.8em; font-weight:normal">${msg}</span>`;
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    renderQuiz();
+</script>
+
+</body>
+</html>
