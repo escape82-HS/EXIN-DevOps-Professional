@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab: AWS Free Tier & IaC</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #212529;
+            --primary-color: #FF9900; /* AWS Orange */
+            --secondary-color: #232F3E; /* AWS Dark Blue */
+            --code-bg: #2d2d2d;
+            --code-text: #f8f8f2;
+            --step-bg: #ffffff;
+            --danger-color: #dc3545;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid var(--primary-color);
+        }
+
+        h1 { color: var(--secondary-color); }
+        h2 { color: var(--secondary-color); margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px;}
+        h3 { color: #555; margin-top: 20px;}
+
+        .badge {
+            background-color: var(--secondary-color);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            vertical-align: middle;
+        }
+
+        .badge-free { background-color: #28a745; }
+
+        .step {
+            background: var(--step-bg);
+            padding: 30px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .warning-box {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .warning-box strong { margin-right: 5px; }
+
+        pre {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .filename {
+            font-family: monospace;
+            background-color: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: #d63384;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .destroy-section {
+            border-left-color: var(--danger-color);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>☁️ Lab: AWS Real World</h1>
+        <p>Deploy di infrastruttura reale su Amazon Web Services usando Terraform.</p>
+        <span class="badge badge-free">Free Tier</span> <span class="badge">Terraform</span> <span class="badge">AWS CLI</span>
+    </header>
+
+    <div class="warning-box">
+        <strong>⚠️ ATTENZIONE AI COSTI:</strong> 
+        Questo lab usa risorse reali. Anche se rientrano nel Free Tier, è tua responsabilità distruggere tutto alla fine (Passo 7) per evitare addebiti accidentali.
+    </div>
+
+    <div class="step">
+        <h2>📋 Prerequisiti</h2>
+        <ul>
+            <li><strong>Account AWS Attivo</strong></li>
+            <li><strong>AWS CLI</strong> installata e configurata</li>
+            <li><strong>Terraform</strong> installato</li>
+            <li><strong>Checkov</strong> (Opzionale, per security scan)</li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h2>Passo 1: Configurazione Credenziali</h2>
+        <p>A differenza di LocalStack, qui servono credenziali vere. Crea una <strong>Access Key</strong> dalla console IAM di AWS.</p>
+        <p>Nel terminale esegui:</p>
+        <pre><code>aws configure</code></pre>
+        <p>Inserisci:</p>
+        <ul>
+            <li>AWS Access Key ID: <em>(La tua chiave)</em></li>
+            <li>AWS Secret Access Key: <em>(La tua chiave segreta)</em></li>
+            <li>Default region name: <code>us-east-1</code></li>
+            <li>Default output format: <code>json</code></li>
+        </ul>
+    </div>
+
+    <div class="step">
+        <h2>Passo 2: Codice Applicazione</h2>
+        <p>Crea il file <span class="filename">hello.py</span>.</p>
+        <pre><code>import json
+
+def lambda_handler(event, context):
+    print("Log generato su AWS CloudWatch!")
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Ciao da AWS Free Tier!')
+    }</code></pre>
+    </div>
+
+    <div class="step">
+        <h2>Passo 3: Infrastructure as Code (Terraform)</h2>
+        <p>Crea il file <span class="filename">main.tf</span>. Nota l'uso di <code>random_id</code> per garantire che il nome del bucket sia unico a livello globale.</p>
+        <pre><code>terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+    random = {
+      source = "hashicorp/random"
+      version = "~> 3.0"
+    }
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+  # Usa automaticamente le credenziali di 'aws configure'
+}
+
+# Generatore stringa casuale per nome bucket unico
+resource "random_id" "suffix" {
+  byte_length = 4
+}
+
+# 1. Bucket S3
+resource "aws_s3_bucket" "my_bucket" {
+  bucket        = "lab-freetier-${random_id.suffix.hex}"
+  force_destroy = true 
+}
+
+# 2. Zip Codice
+data "archive_file" "lambda_zip" {
+  type        = "zip"
+  source_file = "hello.py"
+  output_path = "lambda_function.zip"
+}
+
+# 3. Ruolo IAM
+resource "aws_iam_role" "iam_for_lambda" {
+  name = "iam_for_lambda_freetier"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+# Policy per i Log (CloudWatch)
+resource "aws_iam_policy_attachment" "lambda_logs" {
+  name       = "lambda_logs"
+  roles      = [aws_iam_role.iam_for_lambda.name]
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+# 4. Funzione Lambda
+resource "aws_lambda_function" "test_lambda" {
+  filename      = "lambda_function.zip"
+  function_name = "hello_aws_real"
+  role          = aws_iam_role.iam_for_lambda.arn
+  handler       = "hello.lambda_handler"
+  runtime       = "python3.9"
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+}
+
+output "bucket_name" {
+  value = aws_s3_bucket.my_bucket.id
+}
+
+output "lambda_name" {
+  value = aws_lambda_function.test_lambda.function_name
+}</code></pre>
+    </div>
+
+    <div class="step">
+        <h2>Passo 4: Policy as Code (Checkov)</h2>
+        <p>Esegui la scansione prima del deploy. Su AWS reale, Checkov troverà rischi veri (es. bucket pubblico, mancanza di encryption).</p>
+        <pre><code>checkov -d .</code></pre>
+    </div>
+
+    <div class="step">
+        <h2>Passo 5: Deploy e Test</h2>
+        <h3>1. Deploy</h3>
+        <pre><code>terraform init
+terraform apply --auto-approve</code></pre>
+        <p><em>Attendi circa 30-60 secondi per la creazione delle risorse su AWS.</em></p>
+
+        <h3>2. Test (AWS CLI)</h3>
+        <p>Nota: Non usiamo più <code>--endpoint-url</code>.</p>
+        
+        <pre><code># Invoca la Lambda
+aws lambda invoke --function-name hello_aws_real response.json
+
+# Leggi la risposta
+cat response.json</code></pre>
+
+        <p>Dovresti vedere: <code>"Ciao da AWS Free Tier!"</code></p>
+    </div>
+
+    <div class="step destroy-section">
+        <h2 style="color: var(--danger-color);">Passo 7: PULIZIA (Fondamentale)</h2>
+        <p>Per evitare costi futuri, distruggi l'infrastruttura immediatamente dopo aver finito il test.</p>
+        <pre><code>terraform destroy --auto-approve</code></pre>
+        <p>Vai nella console web di AWS (S3 e Lambda) per confermare che tutto sia stato cancellato.</p>
+    </div>
+
+    <footer>
+        <p>Generato da Monica AI - Lab AWS Free Tier</p>
+    </footer>
+</div>
+
+</body>
+</html>

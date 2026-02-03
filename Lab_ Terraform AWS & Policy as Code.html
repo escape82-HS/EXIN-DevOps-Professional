@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab: Terraform & Policy as Code | EXIN DevOps</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #334155; }
+        code, pre { font-family: 'Fira Code', monospace; }
+        
+        .step-card { display: none; }
+        .step-card.active { display: block; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .code-block {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            font-size: 0.85rem;
+            position: relative;
+        }
+        .copy-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: #334155;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.7rem;
+            cursor: pointer;
+        }
+        .copy-btn:hover { background: #475569; }
+
+        .note { border-left: 4px solid #3b82f6; background-color: #eff6ff; padding: 1rem; margin-top: 1rem; border-radius: 0.25rem; }
+        .warning { border-left: 4px solid #f59e0b; background-color: #fffbeb; padding: 1rem; margin-top: 1rem; border-radius: 0.25rem; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white p-6 shadow-md">
+        <div class="max-w-4xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold"><i class="fas fa-code-branch mr-2 text-purple-400"></i>Terraform Lab</h1>
+                <p class="text-slate-400 text-sm">Deploy AWS EC2 & Policy as Code Check</p>
+            </div>
+            <div class="text-sm bg-slate-800 px-3 py-1 rounded">
+                Tempo stimato: 30 min
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-4xl mx-auto w-full p-6">
+        
+        <!-- Navigation -->
+        <div class="flex mb-8 border-b border-slate-200 pb-4 overflow-x-auto">
+            <button onclick="showStep(1)" id="btn-1" class="px-4 py-2 font-bold text-purple-600 border-b-2 border-purple-600 mr-4 whitespace-nowrap">1. Prerequisiti</button>
+            <button onclick="showStep(2)" id="btn-2" class="px-4 py-2 text-slate-500 hover:text-purple-600 mr-4 whitespace-nowrap">2. Scrittura Codice</button>
+            <button onclick="showStep(3)" id="btn-3" class="px-4 py-2 text-slate-500 hover:text-purple-600 mr-4 whitespace-nowrap">3. Deployment</button>
+            <button onclick="showStep(4)" id="btn-4" class="px-4 py-2 text-slate-500 hover:text-purple-600 mr-4 whitespace-nowrap">4. Policy as Code</button>
+            <button onclick="showStep(5)" id="btn-5" class="px-4 py-2 text-slate-500 hover:text-purple-600 whitespace-nowrap">5. Cleanup</button>
+        </div>
+
+        <!-- STEP 1: PREREQUISITI -->
+        <div id="step-1" class="step-card active">
+            <h2 class="text-2xl font-bold mb-4 text-slate-800">Prerequisiti e Setup</h2>
+            <p class="mb-4">Prima di iniziare, assicurati di avere quanto segue installato sul tuo computer (o usa Cloud Shell su AWS).</p>
+            
+            <div class="grid md:grid-cols-2 gap-4 mb-6">
+                <div class="bg-white p-4 rounded shadow border border-slate-200">
+                    <h3 class="font-bold text-slate-700 mb-2"><i class="fab fa-aws mr-2"></i>AWS Account & CLI</h3>
+                    <ul class="list-disc list-inside text-sm text-slate-600 space-y-1">
+                        <li>Account AWS attivo (Free Tier ok).</li>
+                        <li>AWS CLI installata.</li>
+                        <li>Configurata con <code>aws configure</code> (Access Key & Secret Key).</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-4 rounded shadow border border-slate-200">
+                    <h3 class="font-bold text-slate-700 mb-2"><i class="fas fa-cube mr-2"></i>Terraform</h3>
+                    <ul class="list-disc list-inside text-sm text-slate-600 space-y-1">
+                        <li>Terraform installato (verifica con <code>terraform -v</code>).</li>
+                        <li>Un editor di testo (VS Code consigliato).</li>
+                        <li>Python (per lo script di policy nel passo 4).</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-slate-100 p-4 rounded border border-slate-300">
+                <h3 class="font-bold mb-2">Preparazione Cartella</h3>
+                <p class="text-sm mb-2">Apri il tuo terminale e crea una cartella per il progetto:</p>
+                <div class="code-block">
+                    mkdir terraform-lab
+                    <br>cd terraform-lab
+                </div>
+            </div>
+            
+            <div class="mt-6 text-right">
+                <button onclick="showStep(2)" class="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700">Prossimo: Scrivi il Codice <i class="fas fa-arrow-right ml-2"></i></button>
+            </div>
+        </div>
+
+        <!-- STEP 2: SCRITTURA CODICE -->
+        <div id="step-2" class="step-card">
+            <h2 class="text-2xl font-bold mb-4 text-slate-800">Scrittura del file main.tf</h2>
+            <p class="mb-4">Terraform usa un linguaggio dichiarativo chiamato HCL (HashiCorp Configuration Language). Creeremo un file che descrive la nostra infrastruttura.</p>
+
+            <div class="mb-6">
+                <h3 class="font-bold text-slate-700 mb-2">Crea il file <code>main.tf</code></h3>
+                <p class="text-sm text-slate-600 mb-2">Copia questo codice nel file. Questo codice dice ad AWS di creare una piccola macchina Linux.</p>
+                
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyToClipboard('code-tf')">Copia</button>
+                    <pre id="code-tf">
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 4.16"
+    }
+  }
+  required_version = ">= 1.2.0"
+}
+
+provider "aws" {
+  region  = "us-east-1" # Assicurati che questa regione vada bene per te
+}
+
+# Definiamo una risorsa di tipo AWS Instance
+resource "aws_instance" "app_server" {
+  # AMI per Amazon Linux 2 (Verifica l'ID se cambi regione!)
+  ami           = "ami-0cff7528ff583bf9a" 
+  instance_type = "t2.micro"
+
+  # I tag sono fondamentali per la governance
+  tags = {
+    Name = "Terraform-Lab-Instance"
+    OS   = "Linux" 
+  }
+}
+                    </pre>
+                </div>
+            </div>
+
+            <div class="note">
+                <h4 class="font-bold text-blue-800 text-sm"><i class="fas fa-info-circle mr-2"></i>Spiegazione del Codice</h4>
+                <ul class="list-disc list-inside text-sm text-blue-900 mt-2">
+                    <li><strong>provider "aws":</strong> Dice a Terraform che useremo Amazon Web Services.</li>
+                    <li><strong>resource "aws_instance":</strong> È l'oggetto che vogliamo creare. "app_server" è il nome interno per Terraform.</li>
+                    <li><strong>ami:</strong> Amazon Machine Image. È l'ID del "disco di installazione" (es. Linux, Windows).</li>
+                    <li><strong>tags:</strong> Etichette chiave-valore. Useremo il tag "OS" dopo per la nostra Policy.</li>
+                </ul>
+            </div>
+
+            <div class="mt-6 flex justify-between">
+                <button onclick="showStep(1)" class="text-slate-500">Indietro</button>
+                <button onclick="showStep(3)" class="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700">Prossimo: Deployment <i class="fas fa-arrow-right ml-2"></i></button>
+            </div>
+        </div>
+
+        <!-- STEP 3: DEPLOYMENT -->
+        <div id="step-3" class="step-card">
+            <h2 class="text-2xl font-bold mb-4 text-slate-800">Il Workflow Terraform</h2>
+            <p class="mb-4">Ora eseguiamo i tre comandi sacri di Terraform.</p>
+
+            <div class="space-y-6">
+                <!-- Init -->
+                <div class="bg-white p-4 rounded shadow border-l-4 border-green-500">
+                    <h3 class="font-bold text-slate-800">1. Inizializzazione</h3>
+                    <p class="text-sm text-slate-600 mb-2">Scarica i plugin necessari per parlare con AWS.</p>
+                    <div class="code-block">terraform init</div>
+                    <p class="text-xs text-green-400 mt-2">Output atteso: "Terraform has been successfully initialized!"</p>
+                </div>
+
+                <!-- Plan -->
+                <div class="bg-white p-4 rounded shadow border-l-4 border-yellow-500">
+                    <h3 class="font-bold text-slate-800">2. Pianificazione (Dry Run)</h3>
+                    <p class="text-sm text-slate-600 mb-2">Terraform calcola cosa farà senza farlo davvero.</p>
+                    <div class="code-block">terraform plan</div>
+                    <p class="text-xs text-yellow-400 mt-2">Output atteso: "Plan: 1 to add, 0 to change, 0 to destroy."</p>
+                </div>
+
+                <!-- Apply -->
+                <div class="bg-white p-4 rounded shadow border-l-4 border-purple-500">
+                    <h3 class="font-bold text-slate-800">3. Applicazione</h3>
+                    <p class="text-sm text-slate-600 mb-2">Crea effettivamente le risorse su AWS.</p>
+                    <div class="code-block">terraform apply</div>
+                    <p class="text-sm text-slate-400 mt-2">Ti chiederà conferma. Scrivi <code>yes</code> e premi invio.</p>
+                </div>
+            </div>
+
+            <div class="warning">
+                <i class="fas fa-check-circle mr-2 text-green-600"></i>
+                Vai sulla tua console AWS (sezione EC2, regione us-east-1). Dovresti vedere una macchina chiamata "Terraform-Lab-Instance" in fase di avvio!
+            </div>
+
+            <div class="mt-6 flex justify-between">
+                <button onclick="showStep(2)" class="text-slate-500">Indietro</button>
+                <button onclick="showStep(4)" class="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700">Prossimo: Policy as Code <i class="fas fa-arrow-right ml-2"></i></button>
+            </div>
+        </div>
+
+        <!-- STEP 4: POLICY AS CODE -->
+        <div id="step-4" class="step-card">
+            <h2 class="text-2xl font-bold mb-4 text-slate-800">Policy as Code: Bloccare Windows</h2>
+            <p class="mb-4 text-slate-600">
+                Immagina che la policy aziendale vieti l'uso di server Windows per risparmiare sui costi di licenza. 
+                Come possiamo automatizzare questo controllo <strong>prima</strong> del deployment?
+            </p>
+
+            <div class="bg-slate-100 p-4 rounded mb-6">
+                <h3 class="font-bold text-slate-800 mb-2">1. Simula la violazione</h3>
+                <p class="text-sm mb-2">Modifica il file <code>main.tf</code>. Cambia il tag OS in "Windows".</p>
+                <div class="code-block">
+  tags = {
+    Name = "Terraform-Lab-Instance"
+    OS   = "Windows"  # <--- CAMBIA QUESTO
+  }
+                </div>
+            </div>
+
+            <div class="bg-slate-100 p-4 rounded mb-6">
+                <h3 class="font-bold text-slate-800 mb-2">2. Genera il Piano in JSON</h3>
+                <p class="text-sm mb-2">I tool di policy non leggono l'output colorato del terminale. Hanno bisogno di JSON.</p>
+                <div class="code-block">
+# Salva il piano in un file binario
+terraform plan -out=tfplan
+
+# Converti il binario in JSON leggibile
+terraform show -json tfplan > tfplan.json
+                </div>
+            </div>
+
+            <div class="bg-slate-100 p-4 rounded mb-6">
+                <h3 class="font-bold text-slate-800 mb-2">3. Il Policy Engine (Script Python)</h3>
+                <p class="text-sm mb-2">In produzione useresti tool come <strong>OPA (Open Policy Agent)</strong> o <strong>HashiCorp Sentinel</strong>. Qui useremo uno script Python per capire la logica.</p>
+                <p class="text-sm mb-2">Crea un file chiamato <code>policy_check.py</code>:</p>
+                
+                <div class="code-block">
+                    <button class="copy-btn" onclick="copyToClipboard('code-py')">Copia Script</button>
+                    <pre id="code-py">
+import json
+import sys
+
+# Carica il piano Terraform
+with open('tfplan.json') as f:
+    plan = json.load(f)
+
+print("🔍 Analisi Policy in corso...")
+
+# Cerca nelle modifiche alle risorse
+resource_changes = plan.get('resource_changes', [])
+blocked = False
+
+for resource in resource_changes:
+    # Controlla solo le risorse che vengono create o aggiornate
+    actions = resource.get('change', {}).get('actions', [])
+    if 'create' in actions or 'update' in actions:
+        
+        # Leggi i tag (after = stato dopo l'applicazione)
+        tags = resource.get('change', {}).get('after', {}).get('tags', {})
+        os_tag = tags.get('OS', 'Unknown')
+        
+        print(f"Checking resource: {resource['address']} - OS Tag: {os_tag}")
+
+        if os_tag == 'Windows':
+            print("❌ VIOLAZIONE POLICY: Rilevata istanza Windows!")
+            blocked = True
+
+if blocked:
+    print("\n⛔ DEPLOYMENT BLOCCATO DALLA POLICY.")
+    sys.exit(1) # Esce con errore
+else:
+    print("\n✅ POLICY CHECK SUPERATO.")
+    sys.exit(0) # Esce con successo
+                    </pre>
+                </div>
+            </div>
+
+            <div class="bg-slate-100 p-4 rounded mb-6">
+                <h3 class="font-bold text-slate-800 mb-2">4. Esegui il controllo</h3>
+                <div class="code-block">python3 policy_check.py</div>
+                <p class="text-sm text-red-500 mt-2 font-bold">Risultato atteso: "⛔ DEPLOYMENT BLOCCATO DALLA POLICY."</p>
+                <p class="text-sm text-slate-600 mt-1">Se provassi a mettere questo script in una pipeline CI/CD (GitHub Actions), la pipeline si fermerebbe qui, impedendo il <code>terraform apply</code>.</p>
+            </div>
+
+            <div class="mt-6 flex justify-between">
+                <button onclick="showStep(3)" class="text-slate-500">Indietro</button>
+                <button onclick="showStep(5)" class="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700">Prossimo: Cleanup <i class="fas fa-arrow-right ml-2"></i></button>
+            </div>
+        </div>
+
+        <!-- STEP 5: CLEANUP -->
+        <div id="step-5" class="step-card">
+            <h2 class="text-2xl font-bold mb-4 text-slate-800">Pulizia (Destroy)</h2>
+            <p class="mb-4">Regola d'oro del Cloud: se non lo usi, spegnilo per non pagare.</p>
+
+            <div class="bg-red-50 p-6 rounded border border-red-200 text-center">
+                <h3 class="font-bold text-red-800 text-xl mb-4"><i class="fas fa-trash-alt mr-2"></i>Terraform Destroy</h3>
+                <p class="text-slate-600 mb-4">Questo comando distrugge tutto ciò che è definito nel file <code>main.tf</code>.</p>
+                
+                <div class="code-block text-left inline-block w-full max-w-md">
+                    terraform destroy
+                </div>
+                <p class="text-sm text-slate-500 mt-4">Digita <code>yes</code> quando richiesto.</p>
+            </div>
+
+            <div class="mt-8 bg-white p-6 rounded shadow">
+                <h3 class="font-bold text-slate-800 mb-2">Cosa hai imparato oggi?</h3>
+                <ul class="list-disc list-inside space-y-2 text-slate-600">
+                    <li>Come definire infrastruttura come codice (HCL).</li>
+                    <li>Il ciclo di vita: <code>init</code> -> <code>plan</code> -> <code>apply</code> -> <code>destroy</code>.</li>
+                    <li><strong>Policy as Code:</strong> Come intercettare il file JSON del piano per applicare regole di sicurezza o compliance prima che sia troppo tardi.</li>
+                </ul>
+            </div>
+
+            <div class="mt-6 flex justify-between">
+                <button onclick="showStep(4)" class="text-slate-500">Indietro</button>
+                <button onclick="location.reload()" class="text-purple-600 underline">Ricomincia</button>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        function showStep(step) {
+            // Hide all steps
+            document.querySelectorAll('.step-card').forEach(el => el.classList.remove('active'));
+            // Reset nav buttons
+            for(let i=1; i<=5; i++) {
+                const btn = document.getElementById(`btn-${i}`);
+                btn.classList.remove('font-bold', 'text-purple-600', 'border-b-2', 'border-purple-600');
+                btn.classList.add('text-slate-500');
+            }
+
+            // Show target step
+            document.getElementById(`step-${step}`).classList.add('active');
+            
+            // Highlight nav button
+            const activeBtn = document.getElementById(`btn-${step}`);
+            activeBtn.classList.remove('text-slate-500');
+            activeBtn.classList.add('font-bold', 'text-purple-600', 'border-b-2', 'border-purple-600');
+        }
+
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Codice copiato negli appunti!");
+            });
+        }
+    </script>
+</body>
+</html>
